@@ -1,0 +1,324 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#3f7d3a">
+<meta name="mobile-web-app-capable" content="yes">
+<title>시차 관찰 실험실</title>
+<style>
+/* Layout: 위에서 본 평면도(왼쪽) + 두 관측자의 시야(오른쪽), 아래에 값과 기록표 */
+:root{
+  --bg:#f3f6f1; --panel:#ffffff; --fg:#1f2a22; --muted:#5d6b61; --line:#d5ddd4;
+  --grass:#cfe3c2; --sky:#e3eef6; --mount:#c4d0da;
+  --a:#5b6f8f; --b:#d9772b; --tree:#3f7d3a; --trunk:#8a5a33; --flower:#f2c418; --flowerc:#d9822b; --stem:#4f8f3f; --angle:#d4262a;
+  --display:"Samsung Sans","SamsungOne","Noto Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  --body:"SamsungOne","Noto Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  --mono:"Roboto Mono","Noto Sans Mono",ui-monospace,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#151b17; --panel:#1d2520; --fg:#e6ece6; --muted:#9aa89e; --line:#334037;
+  --grass:#2a3d27; --sky:#1e2a33; --mount:#344250;
+  --a:#8fa6cc; --b:#f0954c; --tree:#5fae57; --trunk:#b07a4d; --flower:#ffd83a; --flowerc:#e8913a; --stem:#6fb25c; --angle:#ff5a5a; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#151b17; --panel:#1d2520; --fg:#e6ece6; --muted:#9aa89e; --line:#334037;
+  --grass:#2a3d27; --sky:#1e2a33; --mount:#344250;
+  --a:#8fa6cc; --b:#f0954c; --tree:#5fae57; --trunk:#b07a4d; --flower:#ffd83a; --flowerc:#e8913a; --stem:#6fb25c; --angle:#ff5a5a; color-scheme:dark}
+html{-webkit-text-size-adjust:100%;touch-action:manipulation}
+body{margin:0;-webkit-tap-highlight-color:transparent;background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.55}
+.wrap{max-width:1180px;margin:0 auto;padding-block:20px 40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:16px}
+header h1{font-family:var(--display);font-size:clamp(24px,3.4vw,32px);margin:0;font-weight:700;text-wrap:balance}
+header p{margin:4px 0 0;color:var(--muted);max-width:70ch}
+.grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:16px}
+@media (max-width:760px){.grid{grid-template-columns:minmax(0,1fr)}}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px;min-width:0}
+.panel h2{font-size:13px;letter-spacing:.04em;color:var(--muted);margin:0 0 8px;font-weight:600}
+svg{display:block;width:100%;height:auto}
+#top{touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+svg{-webkit-user-select:none;user-select:none}
+.drag{cursor:grab}
+.dragging,.dragging .drag{cursor:grabbing}
+.views{display:grid;gap:12px;align-content:start}
+.vlabel{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap;font-size:14px;margin-bottom:4px}
+.vlabel b.a{color:var(--a)} .vlabel b.b{color:var(--b)}
+.vlabel span{color:var(--muted)}
+.vlabel span strong{font-family:var(--mono);color:var(--fg)}
+.sum{font-size:15px;background:var(--bg);border-radius:8px;padding:10px 12px;font-variant-numeric:tabular-nums}
+.sum .ca{color:var(--a);font-weight:700} .sum .cb{color:var(--b);font-weight:700} .sum .cp{color:var(--angle);font-weight:700}
+.controls{display:flex;flex-wrap:wrap;gap:12px 28px;align-items:center;justify-content:space-between}
+.stat{display:grid;gap:0}
+.stat small{color:var(--muted);font-size:12px}
+.stat span{font-family:var(--mono);font-size:22px;font-variant-numeric:tabular-nums}
+.stat.p span{color:var(--angle);font-size:30px}
+button{font:inherit;font-weight:600;border:1px solid var(--line);background:var(--bg);color:var(--fg);border-radius:8px;padding:8px 14px;cursor:pointer}
+button.primary{background:var(--tree);color:#fff;border-color:var(--tree)}
+button:focus-visible{outline:3px solid var(--b);outline-offset:2px}
+.btns{display:flex;gap:8px;flex-wrap:wrap}
+.tablewrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums;font-size:14px}
+th,td{padding:6px 10px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+th{color:var(--muted);font-weight:600;font-size:12px}
+th:first-child,td:first-child{text-align:left}
+td.p{color:var(--angle);font-family:var(--mono)}
+.empty{color:var(--muted);font-size:14px;padding:8px 0}
+.tips{margin:0;padding-left:20px;color:var(--muted);font-size:14px;display:grid;gap:4px}
+.tips b{color:var(--fg)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;justify-self:start}
+.seg button{border:0;border-radius:0;padding:12px 22px;font-size:16px;min-height:44px;background:var(--panel);color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--fg);color:var(--panel)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>시차 관찰 실험실</h1>
+    <p>두 관측자가 같은 노란 꽃을 바라봅니다. 아주 멀리 있는 나무를 기준으로 꽃이 몇 도 떨어져 보이는지 재면 시차를 알 수 있습니다. 평면도에서 꽃을 위아래로, 관측자를 좌우로 끌어 보세요.</p>
+  </header>
+
+  <div class="grid">
+    <section class="panel">
+      <h2>위에서 내려다본 모습 · 꽃을 위아래로, 관측자를 좌우로 끌어 보세요</h2>
+      <svg id="top" viewBox="0 0 560 450" role="img" aria-label="관측자 두 명과 꽃, 먼 나무의 평면도"></svg>
+    </section>
+    <section class="panel views">
+      <div class="seg" role="group" aria-label="보기 방식">
+        <button id="mSep" aria-pressed="true">따로 보기</button>
+        <button id="mOv" aria-pressed="false">겹쳐 보기</button>
+      </div>
+      <div id="ovBox" hidden>
+        <div class="vlabel"><b><span style="color:var(--a)">A</span>와 <span style="color:var(--b)">B</span>가 본 모습 겹쳐 보기</b><span>꽃이 옮겨 보인 각: <strong id="tp">-</strong></span></div>
+        <svg id="viewAB" viewBox="0 0 600 230" role="img" aria-label="두 관측자의 시야를 겹친 모습"></svg>
+      </div>
+      <div class="sepBox">
+        <div class="vlabel"><b class="a">관측자 A(왼쪽)가 본 모습</b><span>나무에서 꽃까지: <strong id="ta">-</strong></span></div>
+        <svg id="viewA" viewBox="0 0 600 200" role="img" aria-label="관측자 A의 시야"></svg>
+      </div>
+      <div class="sepBox">
+        <div class="vlabel"><b class="b">관측자 B(오른쪽)가 본 모습</b><span>나무에서 꽃까지: <strong id="tb">-</strong></span></div>
+        <svg id="viewB" viewBox="0 0 600 200" role="img" aria-label="관측자 B의 시야"></svg>
+      </div>
+      <div class="sum" id="sum"></div>
+    </section>
+  </div>
+
+</div>
+
+<script>
+(function(){
+const NS="http://www.w3.org/2000/svg";
+const $=id=>document.getElementById(id);
+const deg=r=>r*180/Math.PI;
+function el(tag,attrs,parent,text){const e=document.createElementNS(NS,tag);for(const k in attrs)e.setAttribute(k,attrs[k]);if(text!=null)e.textContent=text;if(parent)parent.appendChild(e);return e}
+function clear(s){while(s.firstChild)s.removeChild(s.firstChild)}
+function side(a){return Math.abs(a)<0.05?"0.0°":Math.abs(a).toFixed(1)+"° "+(a>0?"오른쪽":"왼쪽")}
+
+let D=8, B=2;
+const DMIN=2, DMAX=20, BMIN=0.4, BMAX=24;
+const top=$("top");
+const W=560,H=450,OX=280,OY=380,S=340/21; // 평면도 축척(px/m)
+
+function flowerIcon(p,x,y,s){
+  const g=el("g",{},p);
+  for(let i=0;i<6;i++){const a=i*Math.PI/3;el("circle",{cx:x+Math.cos(a)*6*s,cy:y+Math.sin(a)*6*s,r:5*s,fill:"var(--flower)"},g)}
+  el("circle",{cx:x,cy:y,r:4*s,fill:"var(--flowerc)"},g);
+  return g;
+}
+function treeIcon(p,x,base,s){
+  el("rect",{x:x-5*s,y:base-34*s,width:10*s,height:34*s,fill:"var(--trunk)"},p);
+  el("ellipse",{cx:x,cy:base-46*s,rx:28*s,ry:22*s,fill:"var(--tree)"},p);
+  el("ellipse",{cx:x-16*s,cy:base-36*s,rx:16*s,ry:13*s,fill:"var(--tree)"},p);
+  el("ellipse",{cx:x+16*s,cy:base-36*s,rx:16*s,ry:13*s,fill:"var(--tree)"},p);
+}
+
+/* ---------- 평면도 ---------- */
+function drawTop(d,b,p){
+  clear(top);
+  el("rect",{x:0,y:0,width:W,height:H,fill:"var(--grass)",rx:8},top);
+  el("rect",{x:0,y:0,width:W,height:40,fill:"var(--sky)"},top);
+  treeIcon(top,OX,38,0.6);
+  el("text",{x:OX+26,y:24,fill:"var(--muted)","font-size":13},top,"아주 먼 곳의 나무 (기준)");
+  el("path",{d:"M0 46 "+Array(28).fill("q10 -6 20 0").join(" "),fill:"none",stroke:"var(--muted)","stroke-dasharray":"3 3"},top);
+  for(let m=5;m<=20;m+=5){const y=OY-m*S;el("line",{x1:0,x2:16,y1:y,y2:y,stroke:"var(--muted)"},top);el("text",{x:20,y:y+4,fill:"var(--muted)","font-size":11,"font-family":"var(--mono)"},top,m+" m")}
+  const ax=OX-b/2*S, bx=OX+b/2*S, fy=OY-d*S;
+  // 먼 나무를 향한 시선(평행, 점선)
+  [[ax,"var(--a)"],[bx,"var(--b)"]].forEach(([x,c])=>el("line",{x1:x,y1:OY,x2:x,y2:48,stroke:c,"stroke-width":1.4,"stroke-dasharray":"5 4",opacity:.8},top));
+  // 꽃을 향한 시선
+  [[ax,"var(--a)"],[bx,"var(--b)"]].forEach(([x,c])=>{
+    const t=(OY-48)/(OY-fy); const ex=x+(OX-x)*t;
+    el("line",{x1:x,y1:OY,x2:ex,y2:48,stroke:c,"stroke-width":2.4},top);
+  });
+  // 관측자 위치에서 본 각(먼 나무 방향과 꽃 방향 사이)
+  const th=Math.atan2(b/2,d);
+  const ro=Math.min(46,(OY-fy)*0.55);
+  el("path",{d:`M${ax} ${OY-ro} A${ro} ${ro} 0 0 1 ${ax+ro*Math.sin(th)} ${OY-ro*Math.cos(th)}`,fill:"none",stroke:"var(--a)","stroke-width":2.5},top);
+  el("path",{d:`M${bx} ${OY-ro} A${ro} ${ro} 0 0 0 ${bx-ro*Math.sin(th)} ${OY-ro*Math.cos(th)}`,fill:"none",stroke:"var(--b)","stroke-width":2.5},top);
+  // 시차 각 호 (꽃에서)
+  const angA=Math.atan2(OY-fy,ax-OX), angB=Math.atan2(OY-fy,bx-OX);
+  const r=Math.min(40,(OY-fy)*0.45);
+  const p1={x:OX+r*Math.cos(angA),y:fy+r*Math.sin(angA)}, p2={x:OX+r*Math.cos(angB),y:fy+r*Math.sin(angB)};
+  el("path",{d:`M${p1.x} ${p1.y} A${r} ${r} 0 0 0 ${p2.x} ${p2.y}`,fill:"none",stroke:"var(--angle)","stroke-width":3},top);
+  // 꽃 (위에서 본 모습)
+  flowerIcon(top,OX,fy,1.3);
+  el("path",{d:`M${OX} ${fy-26} l-6 7 h12 z M${OX} ${fy+26} l-6 -7 h12 z`,fill:"var(--flowerc)"},top);
+  // 시차 라벨
+  const lx=OX+28, ly=fy-30;
+  el("rect",{x:lx-4,y:ly-18,width:108,height:25,rx:5,fill:"var(--panel)",opacity:.92},top);
+  el("text",{x:lx+2,y:ly,fill:"var(--angle)","font-size":16,"font-weight":700},top,"시차 "+p.toFixed(1)+"°");
+  // 꽃까지 거리
+  el("line",{x1:OX+18,x2:W-40,y1:fy,y2:fy,stroke:"var(--muted)","stroke-dasharray":"2 4"},top);
+  el("line",{x1:W-40,x2:W-40,y1:OY,y2:fy,stroke:"var(--muted)","stroke-dasharray":"4 3"},top);
+  el("rect",{x:W-178,y:(OY+fy)/2-16,width:132,height:24,rx:5,fill:"var(--panel)",opacity:.92},top);
+  el("text",{x:W-50,y:(OY+fy)/2+1,"text-anchor":"end",fill:"var(--fg)","font-size":14,"font-weight":600},top,"꽃까지 거리 "+d.toFixed(1)+" m");
+  // 관측자 사이 거리
+  el("line",{x1:ax,x2:bx,y1:OY+22,y2:OY+22,stroke:"var(--fg)","stroke-width":1.2},top);
+  el("line",{x1:ax,x2:ax,y1:OY+16,y2:OY+28,stroke:"var(--fg)"},top);
+  el("line",{x1:bx,x2:bx,y1:OY+16,y2:OY+28,stroke:"var(--fg)"},top);
+  el("text",{x:OX,y:OY+44,"text-anchor":"middle",fill:"var(--fg)","font-size":14,"font-weight":600},top,"관측자 사이 거리 "+b.toFixed(1)+" m");
+  // 관측자
+  el("circle",{cx:ax,cy:OY,r:9,fill:"var(--a)"},top);
+  el("text",{x:ax-14,y:OY+5,"text-anchor":"end",fill:"var(--a)","font-weight":700,"font-size":14},top,"A");
+  el("circle",{cx:bx,cy:OY,r:9,fill:"var(--b)"},top);
+  el("text",{x:bx+14,y:OY+5,fill:"var(--b)","font-weight":700,"font-size":14},top,"B");
+  // 끌기 영역
+  el("circle",{cx:OX,cy:fy,r:40,fill:"transparent",class:"drag","data-h":"obj"},top);
+  el("circle",{cx:ax,cy:OY,r:34,fill:"transparent",class:"drag","data-h":"obs"},top);
+  el("circle",{cx:bx,cy:OY,r:34,fill:"transparent",class:"drag","data-h":"obs"},top);
+}
+
+/* ---------- 관측자 시야: 먼 나무가 정중앙, 각도 눈금 ---------- */
+function drawView(svg,xo,d,color,fov){
+  clear(svg);
+  const VW=600,VH=200,hz=104,k=(VW/2)/fov;
+  const X=a=>VW/2+a*k;            // a: 나무로부터 오른쪽으로 몇 도
+  el("rect",{x:0,y:0,width:VW,height:hz,fill:"var(--sky)"},svg);
+  el("path",{d:`M0 ${hz} L0 80 L90 64 L170 78 L250 58 L350 74 L430 60 L520 76 L600 66 L600 ${hz} Z`,fill:"var(--mount)"},svg);
+  el("rect",{x:0,y:hz,width:VW,height:VH-hz,fill:"var(--grass)"},svg);
+  treeIcon(svg,VW/2,hz+2,0.75);
+  // 각도 눈금
+  const ry=VH-28;
+  const step=fov<=40?5:10, lab=fov<=40?10:20;
+  el("line",{x1:0,x2:VW,y1:ry,y2:ry,stroke:"var(--fg)","stroke-width":1},svg);
+  for(let a=-Math.floor(fov/step)*step;a<=fov;a+=step){
+    const x=X(a), major=a%lab===0;
+    el("line",{x1:x,x2:x,y1:ry,y2:ry+(major?10:5),stroke:"var(--fg)","stroke-width":major?1.4:1},svg);
+    if(major&&x>16&&x<VW-16) el("text",{x:x,y:ry+23,"text-anchor":"middle","font-size":11,fill:"var(--muted)","font-family":"var(--mono)"},svg,Math.abs(a)+"°");
+  }
+  el("line",{x1:VW/2,x2:VW/2,y1:hz+4,y2:ry,stroke:"var(--tree)","stroke-width":1.5,"stroke-dasharray":"4 3"},svg);
+  // 꽃 위치(실제 각도)
+  const a=deg(Math.atan2(0-xo,d));
+  const fx=X(a);
+  const sc=Math.min(1.5,Math.max(.6,5/d));
+  const fy=hz+26;
+  el("line",{x1:fx,x2:fx,y1:fy+8*sc,y2:ry,stroke:"var(--stem)","stroke-width":2.5},svg);
+  flowerIcon(svg,fx,fy,sc);
+  // 나무→꽃 각도 화살표
+  const ay=ry-12;
+  if(Math.abs(a)>0.3){
+    const dir=a>0?1:-1;
+    el("line",{x1:VW/2,x2:fx-dir*6,y1:ay,y2:ay,stroke:color,"stroke-width":2.5},svg);
+    el("path",{d:`M${fx} ${ay} l${-dir*9} -5 v10 z`,fill:color},svg);
+    const tx=(VW/2+fx)/2;
+    el("rect",{x:tx-34,y:ay-25,width:68,height:19,rx:4,fill:"var(--panel)",opacity:.92},svg);
+    el("text",{x:tx,y:ay-11,"text-anchor":"middle","font-size":14,"font-weight":700,fill:color,"font-family":"var(--mono)"},svg,Math.abs(a).toFixed(1)+"°");
+  }
+  el("rect",{x:0.5,y:0.5,width:VW-1,height:VH-1,fill:"none",stroke:"var(--line)",rx:6},svg);
+  return a;
+}
+
+/* ---------- 겹쳐 보기 ---------- */
+function drawOverlay(svg,b,d,fov,p){
+  clear(svg);
+  const VW=600,VH=230,hz=110,k=(VW/2)/fov;
+  const X=a=>VW/2+a*k;
+  el("rect",{x:0,y:0,width:VW,height:hz,fill:"var(--sky)"},svg);
+  el("path",{d:`M0 ${hz} L0 86 L90 70 L170 84 L250 64 L350 80 L430 66 L520 82 L600 72 L600 ${hz} Z`,fill:"var(--mount)"},svg);
+  el("rect",{x:0,y:hz,width:VW,height:VH-hz,fill:"var(--grass)"},svg);
+  treeIcon(svg,VW/2,hz+2,0.75);
+  const ry=VH-28;
+  const step=fov<=40?5:10, lab=fov<=40?10:20;
+  el("line",{x1:0,x2:VW,y1:ry,y2:ry,stroke:"var(--fg)","stroke-width":1},svg);
+  for(let a=-Math.floor(fov/step)*step;a<=fov;a+=step){
+    const x=X(a), major=a%lab===0;
+    el("line",{x1:x,x2:x,y1:ry,y2:ry+(major?10:5),stroke:"var(--fg)","stroke-width":major?1.4:1},svg);
+    if(major&&x>16&&x<VW-16) el("text",{x:x,y:ry+23,"text-anchor":"middle","font-size":11,fill:"var(--muted)","font-family":"var(--mono)"},svg,Math.abs(a)+"°");
+  }
+  el("line",{x1:VW/2,x2:VW/2,y1:hz+4,y2:ry,stroke:"var(--tree)","stroke-width":1.5,"stroke-dasharray":"4 3"},svg);
+  const aA=deg(Math.atan2(b/2,d)), aB=-aA;
+  const sc=Math.min(1.5,Math.max(.6,5/d)), fy=hz+30;
+  const xs=[[X(aA),"var(--a)","A",ry-12],[X(aB),"var(--b)","B",ry-40]];
+  xs.forEach(([fx,c,l,ay])=>{
+    el("line",{x1:fx,x2:fx,y1:fy+8*sc,y2:ry,stroke:"var(--stem)","stroke-width":2.5},svg);
+    el("circle",{cx:fx,cy:fy,r:15*sc+3,fill:"none",stroke:c,"stroke-width":3},svg);
+    flowerIcon(svg,fx,fy,sc);
+    el("text",{x:fx,y:fy-15*sc-8,"text-anchor":"middle","font-size":14,"font-weight":700,fill:c},svg,l);
+    const dir=fx>VW/2?1:-1;
+    if(Math.abs(fx-VW/2)>4){
+      el("line",{x1:VW/2,x2:fx-dir*6,y1:ay,y2:ay,stroke:c,"stroke-width":2.5},svg);
+      el("path",{d:`M${fx} ${ay} l${-dir*9} -5 v10 z`,fill:c},svg);
+      const tx=(VW/2+fx)/2, v=Math.abs((fx-VW/2)/k);
+      el("rect",{x:tx-34,y:ay-23,width:68,height:19,rx:4,fill:"var(--panel)",opacity:.92},svg);
+      el("text",{x:tx,y:ay-9,"text-anchor":"middle","font-size":14,"font-weight":700,fill:c,"font-family":"var(--mono)"},svg,v.toFixed(1)+"°");
+    }
+  });
+  // 시차: 두 꽃 사이
+  const x1=X(aB), x2=X(aA), sy=22;
+  el("line",{x1:x1,x2:x1,y1:sy,y2:fy-15*sc-24,stroke:"var(--angle)","stroke-width":1.2,"stroke-dasharray":"3 3"},svg);
+  el("line",{x1:x2,x2:x2,y1:sy,y2:fy-15*sc-24,stroke:"var(--angle)","stroke-width":1.2,"stroke-dasharray":"3 3"},svg);
+  el("path",{d:`M${x1} ${sy} H${x2} M${x1} ${sy-6} v12 M${x2} ${sy-6} v12`,stroke:"var(--angle)","stroke-width":2.5,fill:"none"},svg);
+  el("rect",{x:VW/2-52,y:sy+5,width:104,height:22,rx:4,fill:"var(--panel)",opacity:.92},svg);
+  el("text",{x:VW/2,y:sy+21,"text-anchor":"middle","font-size":15,"font-weight":700,fill:"var(--angle)"},svg,"시차 "+p.toFixed(1)+"°");
+  el("rect",{x:0.5,y:0.5,width:VW-1,height:VH-1,fill:"none",stroke:"var(--line)",rx:6},svg);
+}
+
+let overlay=false;
+function setMode(o){
+  overlay=o;
+  $("mSep").setAttribute("aria-pressed",String(!o));
+  $("mOv").setAttribute("aria-pressed",String(o));
+  $("ovBox").hidden=!o;
+  document.querySelectorAll(".sepBox").forEach(e=>e.hidden=o);
+  update();
+}
+$("mSep").addEventListener("click",()=>setMode(false));
+$("mOv").addEventListener("click",()=>setMode(true));
+
+let last=null;
+function update(){
+  const d=D,b=B;
+  const p=deg(2*Math.atan(b/2/d));
+  drawTop(d,b,p);
+  const fov=Math.min(89,Math.max(30,p/2+12)); // 꽃이 항상 시야 안에 들어오도록 자동 조절
+  const aA=drawView($("viewA"),-b/2,d,"var(--a)",fov);
+  const aB=drawView($("viewB"),b/2,d,"var(--b)",fov);
+  $("ta").textContent=side(aA); $("tb").textContent=side(aB);
+  if(overlay){drawOverlay($("viewAB"),b,d,fov,p);$("tp").textContent=p.toFixed(1)+"°"}
+  $("sum").innerHTML=`<span class="ca">A: 나무 ${side(aA)}</span> + <span class="cb">B: 나무 ${side(aB)}</span> = <span class="cp">시차 ${p.toFixed(1)}°</span>`;
+  last={d,b,p,aA:Math.abs(aA),aB:Math.abs(aB)};
+}
+
+// 평면도에서 직접 끌기 (마우스·터치)
+let mode=null;
+function pt(e){const m=top.getScreenCTM().inverse();const q=top.createSVGPoint();q.x=e.clientX;q.y=e.clientY;return q.matrixTransform(m)}
+function apply(e){
+  const q=pt(e);
+  if(mode==="obj"){D=Math.min(DMAX,Math.max(DMIN,Math.round((OY-q.y)/S*10)/10))}
+  else if(mode==="obs"){B=Math.min(BMAX,Math.max(BMIN,Math.round(Math.abs(q.x-OX)*2/S*10)/10))}
+  update();
+}
+top.addEventListener("pointerdown",e=>{
+  let h=e.target.getAttribute&&e.target.getAttribute("data-h");
+  if(!h){const q=pt(e);h=(q.y>OY-30)?"obs":"obj"}
+  mode=h; top.setPointerCapture(e.pointerId); top.classList.add("dragging"); apply(e); e.preventDefault();
+});
+top.addEventListener("pointermove",e=>{if(mode)apply(e)});
+const end=()=>{mode=null;top.classList.remove("dragging")};
+top.addEventListener("pointerup",end); top.addEventListener("pointercancel",end);
+top.addEventListener("wheel",e=>{e.preventDefault();D=Math.min(DMAX,Math.max(DMIN,Math.round((D+(e.deltaY>0?-0.5:0.5))*10)/10));update()},{passive:false});
+
+top.addEventListener("contextmenu",e=>e.preventDefault());
+update();
+})();
+</script>
+
+</body>
+</html>
